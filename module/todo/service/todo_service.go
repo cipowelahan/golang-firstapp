@@ -3,10 +3,11 @@ package service
 import (
 	"firstapp/module/todo/model"
 	"firstapp/module/todo/repository"
+	"firstapp/util/pg"
 )
 
 type TodoService interface {
-	Fetch() (*[]model.Todo, error)
+	Fetch(urlQuery *pg.UrlQuery) (*pg.Paginate, error)
 	Find(id int) (*model.Todo, error)
 	Store(model *model.Todo) (*model.Todo, error)
 	Update(id int, model *model.Todo) (*model.Todo, error)
@@ -23,8 +24,8 @@ func NewTodoService(repo repository.TodoRepository) TodoService {
 	}
 }
 
-func (serv todoService) Fetch() (*[]model.Todo, error) {
-	todos, err := serv.repo.Fetch()
+func (serv todoService) Fetch(urlQuery *pg.UrlQuery) (*pg.Paginate, error) {
+	todos, err := serv.repo.Fetch(urlQuery)
 	return todos, err
 }
 

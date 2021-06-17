@@ -3,6 +3,7 @@ package controller
 import (
 	"firstapp/module/todo/model"
 	"firstapp/module/todo/service"
+	"firstapp/util/pg"
 	"firstapp/util/response"
 
 	"github.com/gofiber/fiber/v2"
@@ -29,7 +30,13 @@ func NewTodoController(res response.Util, serv service.TodoService) TodoControll
 }
 
 func (cont todoController) Index(c *fiber.Ctx) error {
-	todos, err := cont.serv.Fetch()
+	urlQuery := new(pg.UrlQuery)
+
+	if err := c.QueryParser(urlQuery); err != nil {
+		return cont.res.Send(c, err, nil)
+	}
+
+	todos, err := cont.serv.Fetch(urlQuery)
 	return cont.res.Send(c, err, todos)
 }
 

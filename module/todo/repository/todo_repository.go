@@ -8,7 +8,7 @@ import (
 )
 
 type TodoRepository interface {
-	Fetch() (*[]model.Todo, error)
+	Fetch(urlQuery *pg.UrlQuery) (*pg.Paginate, error)
 	Find(id int) (*model.Todo, error)
 	Store(model *model.Todo) (*model.Todo, error)
 	Update(model *model.Todo) (*model.Todo, error)
@@ -32,29 +32,29 @@ func NewTodoRepository(pg pg.Util) TodoRepository {
 	}
 }
 
-func (repo todoRepository) Fetch() (*[]model.Todo, error) {
+func (repo todoRepository) Fetch(urlQuery *pg.UrlQuery) (*pg.Paginate, error) {
 	todos := new([]model.Todo)
-	err := repo.pg.DB().Model(todos).Select()
-	return todos, err
+	paginate, err := repo.pg.Orm(todos).Paginate(urlQuery)
+	return paginate, err
 }
 
 func (repo todoRepository) Find(id int) (*model.Todo, error) {
 	todo := new(model.Todo)
-	err := repo.pg.DB().Model(todo).Where("id=?", id).Select()
+	err := repo.pg.Orm(todo).Find(id)
 	return todo, err
 }
 
 func (repo todoRepository) Store(model *model.Todo) (*model.Todo, error) {
-	_, err := repo.pg.DB().Model(model).Insert()
+	_, err := repo.pg.Orm(model).Insert()
 	return model, err
 }
 
 func (repo todoRepository) Update(model *model.Todo) (*model.Todo, error) {
-	_, err := repo.pg.DB().Model(model).WherePK().Update()
+	_, err := repo.pg.Orm(model).Update()
 	return model, err
 }
 
 func (repo todoRepository) Delete(model *model.Todo) error {
-	_, err := repo.pg.DB().Model(model).Where("id=?", model.Id).Delete()
+	_, err := repo.pg.Orm(model).Delete()
 	return err
 }

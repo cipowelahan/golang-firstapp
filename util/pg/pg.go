@@ -4,10 +4,13 @@ import (
 	"firstapp/util/env"
 
 	"github.com/go-pg/pg/v10"
+	"github.com/go-pg/pg/v10/orm"
 )
 
 type Util interface {
 	DB() *pg.DB
+	Scan(values ...interface{}) orm.ColumnScanner
+	Orm(model ...interface{}) utilOrm
 }
 
 type util struct {
@@ -30,4 +33,15 @@ func Init(env env.Util) Util {
 
 func (u util) DB() *pg.DB {
 	return u.pg
+}
+
+func (u util) Scan(values ...interface{}) orm.ColumnScanner {
+	return pg.Scan(values...)
+}
+
+func (u util) Orm(model ...interface{}) utilOrm {
+	return utilOrm{
+		orm:   u.DB().Model(model...),
+		model: model,
+	}
 }

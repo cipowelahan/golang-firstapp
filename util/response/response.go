@@ -1,6 +1,9 @@
 package response
 
-import "github.com/gofiber/fiber/v2"
+import (
+	"github.com/go-pg/pg/v10"
+	"github.com/gofiber/fiber/v2"
+)
 
 type Config struct {
 	Message string
@@ -53,6 +56,11 @@ func (u util) Send(c *fiber.Ctx, err error, data interface{}, configs ...Config)
 	if err != nil {
 		u.response.Code = 400
 		u.response.Message = err.Error()
+
+		if err == pg.ErrNoRows {
+			u.response.Code = 404
+			u.response.Message = "row no found"
+		}
 	} else {
 		config := u.getConfig(configs...)
 		u.response.Code = config.Code
