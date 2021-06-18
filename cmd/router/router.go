@@ -36,5 +36,12 @@ func Init(app app.Application) error {
 	app.Router = r
 	todo.Init(app)
 
+	r.Use(func(c *fiber.Ctx) error {
+		return app.Response.Error(c, nil, response.Config{
+			Message: "Route Not Found",
+			Code:    404,
+		})
+	})
+
 	return r.Listen(":" + app.Env.Get("APP_PORT"))
 }
