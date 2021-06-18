@@ -1,7 +1,6 @@
 package response
 
 import (
-	"github.com/go-pg/pg/v10"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -11,7 +10,8 @@ type Config struct {
 }
 
 type Util interface {
-	Send(c *fiber.Ctx, err error, data interface{}, configs ...Config) error
+	Send(c *fiber.Ctx, data interface{}, configs ...Config) error
+	Error(c *fiber.Ctx, data interface{}, configs ...Config) error
 }
 
 type utilResponse struct {
@@ -24,7 +24,7 @@ type util struct {
 	response utilResponse
 }
 
-func NewResponse() Util {
+func Init() Util {
 	return util{
 		response: utilResponse{},
 	}
@@ -52,21 +52,40 @@ func (u util) getConfig(configs ...Config) Config {
 	return config
 }
 
-func (u util) Send(c *fiber.Ctx, err error, data interface{}, configs ...Config) error {
-	if err != nil {
-		u.response.Code = 400
-		u.response.Message = err.Error()
+func (u util) getConfigError(configs ...Config) Config {
+	var config Config
+	if len(configs) > 0 {
+		config = configs[0]
 
-		if err == pg.ErrNoRows {
-			u.response.Code = 404
-			u.response.Message = "row no found"
+		if config.Message == "" {
+			config.Message = "Error Request"
+		}
+
+		if config.Code == 0 {
+			config.Code = 400
 		}
 	} else {
-		config := u.getConfig(configs...)
-		u.response.Code = config.Code
-		u.response.Message = config.Message
-		u.response.Data = data
+		config = Config{
+			Message: "Error Request",
+			Code:    400,
+		}
 	}
 
+	return config
+}
+
+func (u util) Send(c *fiber.Ctx, data interface{}, configs ...Config) error {
+	config := u.getConfig(configs...)
+	u.response.Code = config.Code
+	u.response.Message = config.Message
+	u.response.Data = data
+	return c.Status(u.response.Code).JSON(u.response)
+}
+
+func (u util) Error(c *fiber.Ctx, data interface{}, configs ...Config) error {
+	config := u.getConfigError(configs...)
+	u.response.Code = config.Code
+	u.response.Message = config.Message
+	u.response.Data = data
 	return c.Status(u.response.Code).JSON(u.response)
 }

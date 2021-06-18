@@ -18,7 +18,7 @@ type Application struct {
 func Init() Application {
 	env := env.Init()
 	postgres := pg.Init(env)
-	response := response.NewResponse()
+	response := response.Init()
 
 	return Application{
 		Env:      env,

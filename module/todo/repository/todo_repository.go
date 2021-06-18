@@ -3,24 +3,22 @@ package repository
 import (
 	"firstapp/module/todo/model"
 	"firstapp/util/pg"
-
-	"github.com/go-pg/pg/v10/orm"
 )
 
 type TodoRepository interface {
-	Fetch(urlQuery *pg.UrlQuery) (*pg.Paginate, error)
-	Find(id int) (*model.Todo, error)
-	Store(model *model.Todo) (*model.Todo, error)
-	Update(model *model.Todo) (*model.Todo, error)
-	Delete(model *model.Todo) error
+	Fetch(urlQuery *pg.UrlQuery) *pg.Paginate
+	Find(id int) *model.Todo
+	Store(model *model.Todo) *model.Todo
+	Update(model *model.Todo) *model.Todo
+	Delete(model *model.Todo)
 }
 
 type todoRepository struct {
-	pg pg.Util
+	orm pg.Util
 }
 
-func NewTodoRepository(pg pg.Util) TodoRepository {
-	if err := pg.DB().Model((*model.Todo)(nil)).CreateTable(&orm.CreateTableOptions{
+func NewTodoRepository(orm pg.Util) TodoRepository {
+	if err := orm.CreateTable((*model.Todo)(nil), pg.UtilCreateTableOption{
 		IfNotExists: true,
 		Temp:        false,
 	}); err != nil {
@@ -28,33 +26,56 @@ func NewTodoRepository(pg pg.Util) TodoRepository {
 	}
 
 	return todoRepository{
-		pg: pg,
+		orm: orm,
 	}
 }
 
-func (repo todoRepository) Fetch(urlQuery *pg.UrlQuery) (*pg.Paginate, error) {
+func (repo todoRepository) Fetch(urlQuery *pg.UrlQuery) *pg.Paginate {
 	todos := new([]model.Todo)
-	paginate, err := repo.pg.Orm(todos).Paginate(urlQuery)
-	return paginate, err
+	paginate, err := repo.orm.Orm(todos).Paginate(urlQuery)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return paginate
 }
 
-func (repo todoRepository) Find(id int) (*model.Todo, error) {
+func (repo todoRepository) Find(id int) *model.Todo {
 	todo := new(model.Todo)
-	err := repo.pg.Orm(todo).Find(id)
-	return todo, err
+	err := repo.orm.Orm(todo).Find(id)
+
+	if err != nil {
+		panic(err)
+	}
+
+	return todo
 }
 
-func (repo todoRepository) Store(model *model.Todo) (*model.Todo, error) {
-	_, err := repo.pg.Orm(model).Insert()
-	return model, err
+func (repo todoRepository) Store(model *model.Todo) *model.Todo {
+	_, err := repo.orm.Orm(model).Insert()
+
+	if err != nil {
+		panic(err)
+	}
+
+	return model
 }
 
-func (repo todoRepository) Update(model *model.Todo) (*model.Todo, error) {
-	_, err := repo.pg.Orm(model).Update()
-	return model, err
+func (repo todoRepository) Update(model *model.Todo) *model.Todo {
+	_, err := repo.orm.Orm(model).Update()
+
+	if err != nil {
+		panic(err)
+	}
+
+	return model
 }
 
-func (repo todoRepository) Delete(model *model.Todo) error {
-	_, err := repo.pg.Orm(model).Delete()
-	return err
+func (repo todoRepository) Delete(model *model.Todo) {
+	_, err := repo.orm.Orm(model).Delete()
+
+	if err != nil {
+		panic(err)
+	}
 }
