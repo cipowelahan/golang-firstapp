@@ -48,14 +48,17 @@ func (uo utilOrm) Paginate(urlQuery *UrlQuery) (*Paginate, error) {
 
 }
 
-func (uo utilOrm) Insert() (orm.Result, error) {
-	return uo.orm.Insert()
+func (uo utilOrm) Insert() error {
+	_, err := uo.orm.Insert()
+	return err
 }
 
-func (uo utilOrm) Update() (orm.Result, error) {
-	return uo.orm.WherePK().Update()
+func (uo utilOrm) Update() error {
+	_, err := uo.orm.WherePK().Update()
+	return err
 }
 
-func (uo utilOrm) Delete() (orm.Result, error) {
-	return uo.orm.WherePK().Delete()
+func (uo utilOrm) Delete() error {
+	_, err := uo.orm.WherePK().Delete()
+	return err
 }

@@ -43,9 +43,8 @@ func (repo todoRepository) Fetch(urlQuery *pg.UrlQuery) *pg.Paginate {
 
 func (repo todoRepository) Find(id int) *model.Todo {
 	todo := new(model.Todo)
-	err := repo.orm.Orm(todo).Find(id)
 
-	if err != nil {
+	if err := repo.orm.Orm(todo).Find(id); err != nil {
 		panic(err)
 	}
 
@@ -53,9 +52,7 @@ func (repo todoRepository) Find(id int) *model.Todo {
 }
 
 func (repo todoRepository) Store(model *model.Todo) *model.Todo {
-	_, err := repo.orm.Orm(model).Insert()
-
-	if err != nil {
+	if err := repo.orm.Orm(model).Insert(); err != nil {
 		panic(err)
 	}
 
@@ -63,9 +60,7 @@ func (repo todoRepository) Store(model *model.Todo) *model.Todo {
 }
 
 func (repo todoRepository) Update(model *model.Todo) *model.Todo {
-	_, err := repo.orm.Orm(model).Update()
-
-	if err != nil {
+	if err := repo.orm.Orm(model).Update(); err != nil {
 		panic(err)
 	}
 
@@ -73,9 +68,7 @@ func (repo todoRepository) Update(model *model.Todo) *model.Todo {
 }
 
 func (repo todoRepository) Delete(model *model.Todo) {
-	_, err := repo.orm.Orm(model).Delete()
-
-	if err != nil {
+	if err := repo.orm.Orm(model).Delete(); err != nil {
 		panic(err)
 	}
 }
