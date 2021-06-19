@@ -19,33 +19,35 @@ func (uo utilOrm) Select() error {
 	return uo.orm.Select()
 }
 
-func (uo utilOrm) Find(id int) error {
+func (uo utilOrm) Find(condition string, params ...interface{}) error {
+	return uo.orm.Where(condition, params...).Select()
+}
+
+func (uo utilOrm) FindPk(id int) error {
 	return uo.orm.Where("id=?", id).Select()
 }
 
-func (uo utilOrm) Paginate(urlQuery *UrlQuery) (*Paginate, error) {
-	if urlQuery.Limit == 0 {
-		urlQuery.Limit = 10
+func (uo utilOrm) Paginate(limit int, page int) (resultLimit int, resultPage int, resultTotal int, err error) {
+	if limit == 0 {
+		limit = 10
 	}
 
-	if urlQuery.Page == 0 {
-		urlQuery.Page = 1
+	if page == 0 {
+		page = 1
 	}
 
-	err := uo.orm.
-		Limit(urlQuery.Limit).
-		Offset((urlQuery.Page - 1) * urlQuery.Limit).
+	err = uo.orm.
+		Limit(limit).
+		Offset((page - 1) * limit).
 		Select()
 
 	total := 0
 	_, _ = uo.orm.QueryOne(pg.Scan(&total), "SELECT count(*) FROM ?TableName")
-	return &Paginate{
-		Data:  uo.model,
-		Total: total,
-		Limit: urlQuery.Limit,
-		Page:  urlQuery.Page,
-	}, err
 
+	resultLimit = limit
+	resultPage = page
+	resultTotal = total
+	return
 }
 
 func (uo utilOrm) Insert() error {

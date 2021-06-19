@@ -1,9 +1,6 @@
-package controller
+package todo
 
 import (
-	"firstapp/module/todo/model"
-	"firstapp/module/todo/service"
-	"firstapp/util/pg"
 	"firstapp/util/response"
 	"firstapp/util/validation"
 
@@ -20,10 +17,10 @@ type TodoController interface {
 
 type todoController struct {
 	res  response.Util
-	serv service.TodoService
+	serv TodoService
 }
 
-func NewTodoController(res response.Util, serv service.TodoService) TodoController {
+func NewTodoController(res response.Util, serv TodoService) TodoController {
 	return todoController{
 		res:  res,
 		serv: serv,
@@ -31,7 +28,7 @@ func NewTodoController(res response.Util, serv service.TodoService) TodoControll
 }
 
 func (cont todoController) Index(c *fiber.Ctx) error {
-	urlQuery := new(pg.UrlQuery)
+	urlQuery := new(TodoUrlQuery)
 
 	if err := c.QueryParser(urlQuery); err != nil {
 		panic(err)
@@ -53,17 +50,17 @@ func (cont todoController) Get(c *fiber.Ctx) error {
 }
 
 func (cont todoController) Store(c *fiber.Ctx) error {
-	todo := new(model.Todo)
+	body := new(TodoStore)
 
-	if err := c.BodyParser(todo); err != nil {
+	if err := c.BodyParser(body); err != nil {
 		panic(err)
 	}
 
-	if err := validation.Validate(*todo); err != nil {
+	if err := validation.Validate(*body); err != nil {
 		return cont.res.ErrorValidation(c, err)
 	}
 
-	todo = cont.serv.Store(todo)
+	todo := cont.serv.Store(body)
 	return cont.res.Send(c, todo)
 }
 
@@ -74,17 +71,17 @@ func (cont todoController) Update(c *fiber.Ctx) error {
 		panic(err)
 	}
 
-	todo := new(model.Todo)
+	body := new(TodoStore)
 
-	if err := c.BodyParser(todo); err != nil {
+	if err := c.BodyParser(body); err != nil {
 		panic(err)
 	}
 
-	if err := validation.Validate(*todo); err != nil {
+	if err := validation.Validate(*body); err != nil {
 		return cont.res.ErrorValidation(c, err)
 	}
 
-	todo = cont.serv.Update(id, todo)
+	todo := cont.serv.Update(id, body)
 	return cont.res.Send(c, todo)
 }
 
