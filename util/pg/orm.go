@@ -7,7 +7,7 @@ import (
 
 type utilOrm struct {
 	orm   *orm.Query
-	model []interface{}
+	model interface{}
 }
 
 func (uo utilOrm) Where(condition string, params ...interface{}) utilOrm {

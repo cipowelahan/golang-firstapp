@@ -5,6 +5,7 @@ import (
 	"firstapp/module/todo/service"
 	"firstapp/util/pg"
 	"firstapp/util/response"
+	"firstapp/util/validation"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -58,6 +59,10 @@ func (cont todoController) Store(c *fiber.Ctx) error {
 		panic(err)
 	}
 
+	if err := validation.Validate(*todo); err != nil {
+		return cont.res.ErrorValidation(c, err)
+	}
+
 	todo = cont.serv.Store(todo)
 	return cont.res.Send(c, todo)
 }
@@ -73,6 +78,10 @@ func (cont todoController) Update(c *fiber.Ctx) error {
 
 	if err := c.BodyParser(todo); err != nil {
 		panic(err)
+	}
+
+	if err := validation.Validate(*todo); err != nil {
+		return cont.res.ErrorValidation(c, err)
 	}
 
 	todo = cont.serv.Update(id, todo)

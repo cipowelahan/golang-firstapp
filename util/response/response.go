@@ -12,21 +12,22 @@ type Config struct {
 type Util interface {
 	Send(c *fiber.Ctx, data interface{}, configs ...Config) error
 	Error(c *fiber.Ctx, data interface{}, configs ...Config) error
+	ErrorValidation(c *fiber.Ctx, err interface{}) error
 }
 
-type utilResponse struct {
+type UtilResponse struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data"`
 }
 
 type util struct {
-	response utilResponse
+	response UtilResponse
 }
 
 func Init() Util {
 	return util{
-		response: utilResponse{},
+		response: UtilResponse{},
 	}
 }
 
@@ -88,4 +89,11 @@ func (u util) Error(c *fiber.Ctx, data interface{}, configs ...Config) error {
 	u.response.Message = config.Message
 	u.response.Data = data
 	return c.Status(u.response.Code).JSON(u.response)
+}
+
+func (u util) ErrorValidation(c *fiber.Ctx, err interface{}) error {
+	return u.Error(c, err, Config{
+		Code:    422,
+		Message: "Validation failure",
+	})
 }

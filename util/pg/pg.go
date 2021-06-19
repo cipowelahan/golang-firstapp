@@ -11,7 +11,7 @@ type Util interface {
 	DB() *pg.DB
 	CreateTable(model interface{}, opt UtilCreateTableOption) error
 	Scan(values ...interface{}) orm.ColumnScanner
-	Orm(model ...interface{}) utilOrm
+	Orm(model interface{}) utilOrm
 }
 
 type UtilCreateTableOption struct {
@@ -61,9 +61,9 @@ func (u util) Scan(values ...interface{}) orm.ColumnScanner {
 	return pg.Scan(values...)
 }
 
-func (u util) Orm(model ...interface{}) utilOrm {
+func (u util) Orm(model interface{}) utilOrm {
 	return utilOrm{
-		orm:   u.DB().Model(model...),
+		orm:   u.DB().Model(model),
 		model: model,
 	}
 }
