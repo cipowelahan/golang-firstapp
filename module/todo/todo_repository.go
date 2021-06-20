@@ -37,13 +37,8 @@ func (repo todoRepository) Fetch(urlQuery *TodoUrlQuery) *TodoPaginate {
 		panic(err)
 	}
 
-	data := todos
-	if todos == nil {
-		data = &[]Todo{}
-	}
-
 	return &TodoPaginate{
-		Data:  data,
+		Data:  todos,
 		Total: total,
 		Limit: limit,
 		Page:  page,

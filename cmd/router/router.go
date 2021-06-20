@@ -3,6 +3,7 @@ package router
 import (
 	"firstapp/cmd/app"
 	"firstapp/module/todo"
+	"firstapp/module/user"
 	"firstapp/util/response"
 
 	"github.com/go-pg/pg/v10"
@@ -35,6 +36,7 @@ func Init(app app.Application) error {
 
 	app.Router = r
 	todo.Init(app)
+	user.Init(app)
 
 	r.Use(func(c *fiber.Ctx) error {
 		return app.Response.Error(c, nil, response.Config{
