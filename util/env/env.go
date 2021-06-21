@@ -7,7 +7,11 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type Util struct {
+type Util interface {
+	Get(key string, defaultValues ...string) string
+}
+
+type util struct {
 }
 
 func Init() Util {
@@ -15,11 +19,11 @@ func Init() Util {
 		log.Fatal("error Load .env file")
 	}
 
-	return Util{}
+	return util{}
 
 }
 
-func (e Util) Get(key string, defaultValues ...string) string {
+func (e util) Get(key string, defaultValues ...string) string {
 	defVal := ""
 
 	if len(defaultValues) > 0 {

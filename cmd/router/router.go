@@ -2,6 +2,7 @@ package router
 
 import (
 	"firstapp/cmd/app"
+	"firstapp/module/auth"
 	"firstapp/module/todo"
 	"firstapp/module/user"
 	"firstapp/util/response"
@@ -35,8 +36,9 @@ func Init(app app.Application) error {
 	r.Use(recover.New())
 
 	app.Router = r
-	todo.Init(app)
 	user.Init(app)
+	auth.Init(app)
+	todo.Init(app)
 
 	r.Use(func(c *fiber.Ctx) error {
 		return app.Response.Error(c, nil, response.Config{

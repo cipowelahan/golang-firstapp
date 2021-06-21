@@ -37,7 +37,7 @@ func (serv userService) Store(body *UserStore) *User {
 	timeNow := time.Now()
 	data := &User{
 		UserData: UserData{
-			Name:     body.Email,
+			Name:     body.Name,
 			Email:    body.Email,
 			Password: serv.hashPassword(*body.Password),
 		},

@@ -14,19 +14,19 @@ type User struct {
 type UserData struct {
 	Name     *string `json:"name" pg:"name,type:varchar"`
 	Email    *string `json:"email" pg:"email,type:varchar"`
-	Password *string `json:"password" pg:"password,type:varchar"`
+	Password *string `json:"-" pg:"password,type:varchar"`
 }
 
 type UserStore struct {
-	Name     *string `json:"name" validate:"required"`
-	Email    *string `json:"email" validate:"required,email"`
-	Password *string `json:"password" validate:"required,min=6,max=12"`
+	Name     *string `validate:"required"`
+	Email    *string `validate:"required,email"`
+	Password *string `validate:"required,min=6,max=12"`
 }
 
 type UserUpdate struct {
-	Name     *string `json:"name" validate:"omitempty"`
-	Email    *string `json:"email" validate:"omitempty,email"`
-	Password *string `json:"password" validate:"omitempty,min=6,max=12"`
+	Name     *string `validate:"omitempty"`
+	Email    *string `validate:"omitempty,email"`
+	Password *string `validate:"omitempty,min=6,max=12"`
 }
 
 type UserAuthor struct {

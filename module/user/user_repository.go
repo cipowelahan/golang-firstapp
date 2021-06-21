@@ -7,6 +7,7 @@ import (
 type UserRepository interface {
 	Fetch(urlQuery *UserUrlQuery) *UserPaginate
 	Find(id int) *User
+	FindWhere(condition string, params ...interface{}) *User
 	Store(model *User) *User
 	Update(model *User) *User
 	Delete(model *User)
@@ -49,6 +50,16 @@ func (repo userRepository) Find(id int) *User {
 	user := new(User)
 
 	if err := repo.orm.Orm(user).FindPk(id); err != nil {
+		panic(err)
+	}
+
+	return user
+}
+
+func (repo userRepository) FindWhere(condition string, params ...interface{}) *User {
+	user := new(User)
+
+	if err := repo.orm.Orm(user).Where(condition, params...).Select(); err != nil {
 		panic(err)
 	}
 
