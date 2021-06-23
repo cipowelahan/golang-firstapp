@@ -2,6 +2,7 @@ package todo
 
 import (
 	"firstapp/cmd/app"
+	"firstapp/util/jwt"
 	"firstapp/util/response"
 	"firstapp/util/validation"
 
@@ -19,25 +20,28 @@ type Router interface {
 type router struct {
 	res  response.Util
 	serv TodoService
+	jwt  jwt.Util
 }
 
 func Init(app app.Application) {
 	repo := NewTodoRepository(app.Postgres)
 	serv := NewTodoService(repo)
-	router := NewRouter(app.Response, serv)
+	router := NewRouter(app.Response, serv, app.JWT)
 
-	r := app.Router.Group("/todos")
+	r := app.Router.Group("/todos", app.JWT.Middleware)
 	r.Get("/", router.Index)
 	r.Post("/", router.Store)
 	r.Get("/:id", router.Get)
 	r.Put("/:id", router.Update)
 	r.Delete("/:id", router.Delete)
+
 }
 
-func NewRouter(res response.Util, serv TodoService) Router {
+func NewRouter(res response.Util, serv TodoService, jwt jwt.Util) Router {
 	return router{
 		res:  res,
 		serv: serv,
+		jwt:  jwt,
 	}
 }
 
@@ -74,6 +78,12 @@ func (r router) Store(c *fiber.Ctx) error {
 		return r.res.ErrorValidation(c, err)
 	}
 
+	authorID, err := r.jwt.GetAuthorID(c)
+	if err != nil {
+		panic(err)
+	}
+
+	body.AuthorID = authorID
 	todo := r.serv.Store(body)
 	return r.res.Send(c, todo)
 }
@@ -95,6 +105,12 @@ func (r router) Update(c *fiber.Ctx) error {
 		return r.res.ErrorValidation(c, err)
 	}
 
+	authorID, err := r.jwt.GetAuthorID(c)
+	if err != nil {
+		panic(err)
+	}
+
+	body.AuthorID = authorID
 	todo := r.serv.Update(id, body)
 	return r.res.Send(c, todo)
 }

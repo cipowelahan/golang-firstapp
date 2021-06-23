@@ -7,13 +7,18 @@ import (
 type Todo struct {
 	tableName struct{} `pg:"todos"`
 	Id        int64    `json:"id" pg:"id,fk"`
-	TodoStore
+	TodoData
 	TodoAuthor
 }
 
-type TodoStore struct {
+type TodoData struct {
 	Message string `json:"message" pg:"message,type:varchar" validate:"required"`
 	IsDone  bool   `json:"is_done"`
+}
+
+type TodoStore struct {
+	AuthorID *int64
+	TodoData
 }
 
 type TodoAuthor struct {

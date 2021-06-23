@@ -33,8 +33,10 @@ func (serv todoService) Find(id int) *Todo {
 func (serv todoService) Store(body *TodoStore) *Todo {
 	timeNow := time.Now()
 	data := &Todo{
-		TodoStore: *body,
+		TodoData: body.TodoData,
 		TodoAuthor: TodoAuthor{
+			AuthorID:  body.AuthorID,
+			EditorID:  body.AuthorID,
 			CreatedAt: &timeNow,
 			UpdatedAt: &timeNow,
 		},
@@ -46,10 +48,11 @@ func (serv todoService) Store(body *TodoStore) *Todo {
 func (serv todoService) Update(id int, body *TodoStore) *Todo {
 	todoFind := serv.repo.Find(id)
 	timeNow := time.Now()
+	todoFind.EditorID = body.AuthorID
 	todoFind.UpdatedAt = &timeNow
 	data := &Todo{
 		Id:         todoFind.Id,
-		TodoStore:  *body,
+		TodoData:   body.TodoData,
 		TodoAuthor: todoFind.TodoAuthor,
 	}
 	todo := serv.repo.Update(data)

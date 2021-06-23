@@ -21,7 +21,7 @@ func Init() Application {
 	env := env.Init()
 	postgres := pg.Init(env)
 	response := response.Init()
-	jwt := jwt.Init(env)
+	jwt := jwt.Init(env, response)
 
 	return Application{
 		Env:      env,
