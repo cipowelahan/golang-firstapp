@@ -19,6 +19,10 @@ func (uo utilOrm) Select() error {
 	return uo.orm.Select()
 }
 
+func (uo utilOrm) SelectOne() error {
+	return uo.orm.Limit(1).Select()
+}
+
 func (uo utilOrm) Find(condition string, params ...interface{}) error {
 	return uo.orm.Where(condition, params...).Select()
 }

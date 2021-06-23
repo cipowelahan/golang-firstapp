@@ -10,6 +10,7 @@ import (
 type AuthService interface {
 	Register(body *AuthRegister) *user.User
 	Login(credential *AuthLogin) AuthToken
+	User(id int64) *user.User
 }
 
 type authService struct {
@@ -49,7 +50,7 @@ func (serv authService) Register(body *AuthRegister) *user.User {
 }
 
 func (serv authService) Login(credential *AuthLogin) AuthToken {
-	user := serv.userRepo.FindWhere("email=?", credential.Email)
+	user := serv.userRepo.FindLogin("email=?", credential.Email)
 
 	if user == nil || !bcrypt.CheckPasswordHash(credential.Password, *user.Password) {
 		panic("Invalid Credential")
@@ -67,4 +68,9 @@ func (serv authService) Login(credential *AuthLogin) AuthToken {
 		Type:  "Bearer",
 		Token: token,
 	}
+}
+
+func (serv authService) User(id int64) *user.User {
+	user := serv.userRepo.Find(int(id))
+	return user
 }
