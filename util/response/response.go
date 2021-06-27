@@ -34,21 +34,20 @@ func Init() Util {
 }
 
 func (u util) getConfig(configs ...Config) Config {
-	var config Config
+	config := Config{
+		Message: "OK",
+		Code:    200,
+	}
+
 	if len(configs) > 0 {
-		config = configs[0]
+		costomConfig := configs[0]
 
-		if config.Message == "" {
-			config.Message = "OK"
+		if costomConfig.Message != "" {
+			config.Message = costomConfig.Message
 		}
 
-		if config.Code == 0 {
-			config.Code = 200
-		}
-	} else {
-		config = Config{
-			Message: "OK",
-			Code:    200,
+		if costomConfig.Code != 0 {
+			config.Code = costomConfig.Code
 		}
 	}
 
@@ -66,7 +65,7 @@ func (u util) Send(c *fiber.Ctx, data interface{}, configs ...Config) error {
 func (u util) Error(c *fiber.Ctx, err error) error {
 	config := Config{
 		Code:    400,
-		Message: "Bad Request",
+		Message: err.Error(),
 	}
 
 	if err == pg.ErrNoRows {

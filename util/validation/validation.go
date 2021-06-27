@@ -18,12 +18,12 @@ type ErrorResponse struct {
 }
 
 type util struct {
-	res response.Util
+	response response.Util
 }
 
-func Init(res response.Util) Util {
+func Init(response response.Util) Util {
 	return util{
-		res: res,
+		response: response,
 	}
 }
 
@@ -51,7 +51,7 @@ func (u util) Validate(c *fiber.Ctx, body interface{}) error {
 			Message: "Validation Failure",
 		}
 
-		return u.res.Send(c, processValidation, resConfig)
+		return u.response.Send(c, processValidation, resConfig)
 	}
 
 	return nil

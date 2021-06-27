@@ -3,6 +3,7 @@ package jwt
 import (
 	"firstapp/util/env"
 	"firstapp/util/response"
+	"strconv"
 	"strings"
 	"time"
 
@@ -25,40 +26,48 @@ type Util interface {
 }
 
 type util struct {
-	env env.Util
-	res response.Util
+	env      env.Util
+	response response.Util
 }
 
-func Init(env env.Util, res response.Util) Util {
+func Init(env env.Util, response response.Util) Util {
 	return util{
-		env: env,
-		res: res,
+		env:      env,
+		response: response,
 	}
 }
 
 func (u util) Encode(payloads ...Payload) (string, error) {
-	var payload Payload
+	defaultTimeString := u.env.Get("JWT_TIME", "60")
+	defaultTime, err := strconv.Atoi(defaultTimeString)
+	if err != nil {
+		return "", err
+	}
+
+	payload := Payload{
+		UserID: 0,
+		Exp:    time.Now().Add(time.Minute * time.Duration(defaultTime)).Unix(),
+		Sub:    "Authentication",
+		Iss:    u.env.Get("APP_NAME", "first-app-golang"),
+	}
 
 	if len(payloads) > 0 {
-		payload = payloads[0]
+		payloadCostom := payloads[0]
 
-		if payload.Exp == 0 {
-			payload.Exp = time.Now().Add(time.Hour * 1).Unix()
+		if payloadCostom.UserID != 0 {
+			payload.UserID = payloadCostom.UserID
 		}
 
-		if payload.Sub == "" {
-			payload.Sub = "Authentication"
+		if payloadCostom.Exp != 0 {
+			payload.Exp = payloadCostom.Exp
 		}
 
-		if payload.Iss == "" {
-			payload.Iss = u.env.Get("APP_NAME", "first-app-golang")
+		if payloadCostom.Sub != "" {
+			payload.Sub = payloadCostom.Sub
 		}
-	} else {
-		payload = Payload{
-			UserID: 0,
-			Exp:    time.Now().Add(time.Hour * 1).Unix(),
-			Sub:    "Authentication",
-			Iss:    u.env.Get("APP_NAME", "first-app-golang"),
+
+		if payloadCostom.Iss != "" {
+			payload.Iss = payloadCostom.Iss
 		}
 	}
 
@@ -69,14 +78,12 @@ func (u util) Encode(payloads ...Payload) (string, error) {
 		"exp":     payload.Exp,
 	})
 
-	secret := u.env.Get("APP_SECRET", "secret")
-
+	secret := u.env.Get("JWT_SECRET", "secret")
 	return token.SignedString([]byte(secret))
 }
 
 func (u util) Decode(tokenString string) (map[string]interface{}, error) {
-	secret := u.env.Get("APP_SECRET", "secret")
-
+	secret := u.env.Get("JWT_SECRET", "secret")
 	token, err := jwt.Parse(tokenString, func(t *jwt.Token) (interface{}, error) {
 		return []byte(secret), nil
 	})
@@ -87,26 +94,25 @@ func (u util) Decode(tokenString string) (map[string]interface{}, error) {
 
 	if payload, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		return payload, nil
-	} else {
-		return nil, err
 	}
+
+	return nil, err
 }
 
 func (u util) Middleware(c *fiber.Ctx) error {
 	authHeader := c.Get("Authorization")
 	if authHeader == "null" {
-		return u.res.Unauthorized(c)
+		return u.response.Unauthorized(c)
 	}
 
 	arrAuthHeader := strings.Split(authHeader, " ")
 	if len(arrAuthHeader) != 2 {
-		return u.res.Unauthorized(c)
+		return u.response.Unauthorized(c)
 	}
 
 	tokenString := arrAuthHeader[1]
-
 	if _, err := u.Decode(tokenString); err != nil {
-		return u.res.Unauthorized(c)
+		return u.response.Unauthorized(c)
 	}
 
 	return c.Next()
