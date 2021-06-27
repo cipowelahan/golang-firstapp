@@ -1,6 +1,7 @@
 package response
 
 import (
+	"github.com/go-pg/pg/v10"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -11,8 +12,9 @@ type Config struct {
 
 type Util interface {
 	Send(c *fiber.Ctx, data interface{}, configs ...Config) error
-	Error(c *fiber.Ctx, data interface{}, configs ...Config) error
-	ErrorValidation(c *fiber.Ctx, err interface{}) error
+	Error(c *fiber.Ctx, err error) error
+	Unauthorized(c *fiber.Ctx) error
+	RouteNotFound(c *fiber.Ctx) error
 }
 
 type UtilResponse struct {
@@ -53,28 +55,6 @@ func (u util) getConfig(configs ...Config) Config {
 	return config
 }
 
-func (u util) getConfigError(configs ...Config) Config {
-	var config Config
-	if len(configs) > 0 {
-		config = configs[0]
-
-		if config.Message == "" {
-			config.Message = "Error Request"
-		}
-
-		if config.Code == 0 {
-			config.Code = 400
-		}
-	} else {
-		config = Config{
-			Message: "Error Request",
-			Code:    400,
-		}
-	}
-
-	return config
-}
-
 func (u util) Send(c *fiber.Ctx, data interface{}, configs ...Config) error {
 	config := u.getConfig(configs...)
 	u.response.Code = config.Code
@@ -83,17 +63,34 @@ func (u util) Send(c *fiber.Ctx, data interface{}, configs ...Config) error {
 	return c.Status(u.response.Code).JSON(u.response)
 }
 
-func (u util) Error(c *fiber.Ctx, data interface{}, configs ...Config) error {
-	config := u.getConfigError(configs...)
-	u.response.Code = config.Code
-	u.response.Message = config.Message
-	u.response.Data = data
-	return c.Status(u.response.Code).JSON(u.response)
+func (u util) Error(c *fiber.Ctx, err error) error {
+	config := Config{
+		Code:    400,
+		Message: "Bad Request",
+	}
+
+	if err == pg.ErrNoRows {
+		config.Code = 404
+		config.Message = "Row Not Found"
+	}
+
+	return u.Send(c, nil, config)
 }
 
-func (u util) ErrorValidation(c *fiber.Ctx, err interface{}) error {
-	return u.Error(c, err, Config{
-		Code:    422,
-		Message: "Validation failure",
-	})
+func (u util) Unauthorized(c *fiber.Ctx) error {
+	config := Config{
+		Code:    401,
+		Message: "Unauthorized",
+	}
+
+	return u.Send(c, nil, config)
+}
+
+func (u util) RouteNotFound(c *fiber.Ctx) error {
+	config := Config{
+		Code:    401,
+		Message: "Route Not Found",
+	}
+
+	return u.Send(c, nil, config)
 }

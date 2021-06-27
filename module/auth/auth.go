@@ -17,15 +17,16 @@ type Router interface {
 }
 
 type router struct {
-	res  response.Util
-	serv AuthService
-	jwt  jwt.Util
+	response   response.Util
+	validation validation.Util
+	service    AuthService
+	jwt        jwt.Util
 }
 
 func Init(app app.Application) {
 	userRepo := user.NewUserRepository(app.Postgres)
-	serv := NewAuthService(app.JWT, userRepo)
-	router := NewRouter(app.Response, serv, app.JWT)
+	service := NewAuthService(app.JWT, userRepo)
+	router := NewRouter(app.Response, app.Validation, service, app.JWT)
 
 	r := app.Router.Group("/auth")
 	r.Post("/register", router.Register)
@@ -35,50 +36,61 @@ func Init(app app.Application) {
 	authR.Get("/user", router.User)
 }
 
-func NewRouter(res response.Util, serv AuthService, jwt jwt.Util) Router {
+func NewRouter(response response.Util, validation validation.Util, service AuthService, jwt jwt.Util) Router {
 	return router{
-		res:  res,
-		serv: serv,
-		jwt:  jwt,
+		response:   response,
+		validation: validation,
+		service:    service,
+		jwt:        jwt,
 	}
 }
 
 func (r router) Register(c *fiber.Ctx) error {
 	body := new(AuthRegister)
-
 	if err := c.BodyParser(body); err != nil {
-		panic(err)
+		return err
 	}
 
-	if err := validation.Validate(*body); err != nil {
-		return r.res.ErrorValidation(c, err)
+	if err := r.validation.Validate(c, *body); err != nil {
+		return err
 	}
 
-	token := r.serv.Register(body)
-	return r.res.Send(c, token)
+	token, err := r.service.Register(body)
+	if err != nil {
+		return err
+	}
+
+	return r.response.Send(c, token)
 }
 
 func (r router) Login(c *fiber.Ctx) error {
 	body := new(AuthLogin)
-
 	if err := c.BodyParser(body); err != nil {
-		panic(err)
+		return err
 	}
 
-	if err := validation.Validate(*body); err != nil {
-		return r.res.ErrorValidation(c, err)
+	if err := r.validation.Validate(c, *body); err != nil {
+		return err
 	}
 
-	token := r.serv.Login(body)
-	return r.res.Send(c, token)
+	token, err := r.service.Login(body)
+	if err != nil {
+		return err
+	}
+
+	return r.response.Send(c, token)
 }
 
 func (r router) User(c *fiber.Ctx) error {
 	authorID, err := r.jwt.GetAuthorID(c)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	user := r.serv.User(*authorID)
-	return r.res.Send(c, user)
+	user, err := r.service.User(*authorID)
+	if err != nil {
+		return err
+	}
+
+	return r.response.Send(c, user)
 }

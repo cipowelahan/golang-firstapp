@@ -5,9 +5,7 @@ import (
 	"firstapp/module/auth"
 	"firstapp/module/todo"
 	"firstapp/module/user"
-	"firstapp/util/response"
 
-	"github.com/go-pg/pg/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/recover"
@@ -15,17 +13,7 @@ import (
 
 func Init(app app.Application) error {
 	var DefaultErrorHandler = func(c *fiber.Ctx, err error) error {
-		errResponse := response.Config{
-			Message: err.Error(),
-			Code:    400,
-		}
-
-		if err == pg.ErrNoRows {
-			errResponse.Message = "Row Not Found"
-			errResponse.Code = 404
-		}
-
-		return app.Response.Error(c, nil, errResponse)
+		return app.Response.Error(c, err)
 	}
 
 	r := fiber.New(fiber.Config{
@@ -41,10 +29,7 @@ func Init(app app.Application) error {
 	todo.Init(app)
 
 	r.Use(func(c *fiber.Ctx) error {
-		return app.Response.Error(c, nil, response.Config{
-			Message: "Route Not Found",
-			Code:    404,
-		})
+		return app.Response.RouteNotFound(c)
 	})
 
 	return r.Listen(":" + app.Env.Get("APP_PORT"))

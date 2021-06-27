@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"firstapp/module/user"
 	"firstapp/util/bcrypt"
 	"firstapp/util/jwt"
@@ -8,9 +9,9 @@ import (
 )
 
 type AuthService interface {
-	Register(body *AuthRegister) *user.User
-	Login(credential *AuthLogin) AuthToken
-	User(id int64) *user.User
+	Register(body *AuthRegister) (*user.User, error)
+	Login(credential *AuthLogin) (*AuthToken, error)
+	User(id int64) (*user.User, error)
 }
 
 type authService struct {
@@ -25,12 +26,12 @@ func NewAuthService(jwt jwt.Util, userRepo user.UserRepository) AuthService {
 	}
 }
 
-func (serv authService) Register(body *AuthRegister) *user.User {
+func (serv authService) Register(body *AuthRegister) (*user.User, error) {
 	timeNow := time.Now()
 	hashPassword, err := bcrypt.HashPassword(body.Password)
 
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	data := &user.User{
@@ -45,15 +46,14 @@ func (serv authService) Register(body *AuthRegister) *user.User {
 		},
 	}
 
-	user := serv.userRepo.Store(data)
-	return user
+	return serv.userRepo.Store(data)
 }
 
-func (serv authService) Login(credential *AuthLogin) AuthToken {
-	user := serv.userRepo.FindLogin("email=?", credential.Email)
+func (serv authService) Login(credential *AuthLogin) (*AuthToken, error) {
+	user, err := serv.userRepo.FindLogin("email=?", credential.Email)
 
-	if user == nil || !bcrypt.CheckPasswordHash(credential.Password, *user.Password) {
-		panic("Invalid Credential")
+	if err != nil || !bcrypt.CheckPasswordHash(credential.Password, *user.Password) {
+		return nil, errors.New("Invalid Credential")
 	}
 
 	token, err := serv.jwt.Encode(jwt.Payload{
@@ -61,16 +61,15 @@ func (serv authService) Login(credential *AuthLogin) AuthToken {
 	})
 
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return AuthToken{
+	return &AuthToken{
 		Type:  "Bearer",
 		Token: token,
-	}
+	}, nil
 }
 
-func (serv authService) User(id int64) *user.User {
-	user := serv.userRepo.Find(int(id))
-	return user
+func (serv authService) User(id int64) (*user.User, error) {
+	return serv.userRepo.Find(int(id))
 }

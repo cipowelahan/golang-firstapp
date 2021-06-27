@@ -6,11 +6,11 @@ import (
 )
 
 type UserService interface {
-	Fetch(urlQuery *UserUrlQuery) *UserPaginate
-	Find(id int) *User
-	Store(body *UserStore) *User
-	Update(id int, body *UserUpdate) *User
-	Delete(id int)
+	Fetch(urlQuery *UserUrlQuery) (*UserPaginate, error)
+	Find(id int) (*User, error)
+	Store(body *UserStore) (*User, error)
+	Update(id int, body *UserUpdate) (*User, error)
+	Delete(id int) error
 }
 
 type userService struct {
@@ -23,35 +23,42 @@ func NewUserService(repo UserRepository) UserService {
 	}
 }
 
-func (serv userService) Fetch(urlQuery *UserUrlQuery) *UserPaginate {
-	users := serv.repo.Fetch(urlQuery)
-	return users
+func (serv userService) Fetch(urlQuery *UserUrlQuery) (*UserPaginate, error) {
+	return serv.repo.Fetch(urlQuery)
 }
 
-func (serv userService) Find(id int) *User {
-	user := serv.repo.Find(id)
-	return user
+func (serv userService) Find(id int) (*User, error) {
+	return serv.repo.Find(id)
 }
 
-func (serv userService) Store(body *UserStore) *User {
+func (serv userService) Store(body *UserStore) (*User, error) {
 	timeNow := time.Now()
+	hashedPassword, err := serv.hashPassword(*body.Password)
+	if err != nil {
+		return nil, err
+	}
+
 	data := &User{
 		UserData: UserData{
 			Name:     body.Name,
 			Email:    body.Email,
-			Password: serv.hashPassword(*body.Password),
+			Password: hashedPassword,
 		},
 		UserAuthor: UserAuthor{
 			CreatedAt: &timeNow,
 			UpdatedAt: &timeNow,
 		},
 	}
-	user := serv.repo.Store(data)
-	return user
+
+	return serv.repo.Store(data)
 }
 
-func (serv userService) Update(id int, body *UserUpdate) *User {
-	userFind := serv.repo.Find(id)
+func (serv userService) Update(id int, body *UserUpdate) (*User, error) {
+	userFind, err := serv.repo.Find(id)
+	if err != nil {
+		return nil, err
+	}
+
 	timeNow := time.Now()
 	userFind.UpdatedAt = &timeNow
 
@@ -65,7 +72,12 @@ func (serv userService) Update(id int, body *UserUpdate) *User {
 	}
 
 	if body.Password != nil {
-		userData.Password = serv.hashPassword(*body.Password)
+		hashedPassword, err := serv.hashPassword(*body.Password)
+		if err != nil {
+			return nil, err
+		}
+
+		userData.Password = hashedPassword
 	}
 
 	data := &User{
@@ -73,21 +85,24 @@ func (serv userService) Update(id int, body *UserUpdate) *User {
 		UserData:   userData,
 		UserAuthor: userFind.UserAuthor,
 	}
-	user := serv.repo.Update(data)
-	return user
+
+	return serv.repo.Update(data)
 }
 
-func (serv userService) Delete(id int) {
-	user := serv.repo.Find(id)
-	serv.repo.Delete(user)
-}
-
-func (serv userService) hashPassword(password string) *string {
-	hashPassword, err := bcrypt.HashPassword(password)
-
+func (serv userService) Delete(id int) error {
+	user, err := serv.repo.Find(id)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	return &hashPassword
+	return serv.repo.Delete(user)
+}
+
+func (serv userService) hashPassword(password string) (*string, error) {
+	hashPassword, err := bcrypt.HashPassword(password)
+	if err != nil {
+		return nil, err
+	}
+
+	return &hashPassword, nil
 }

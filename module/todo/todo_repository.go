@@ -5,11 +5,11 @@ import (
 )
 
 type TodoRepository interface {
-	Fetch(urlQuery *TodoUrlQuery) *TodoPaginate
-	Find(id int) *Todo
-	Store(model *Todo) *Todo
-	Update(model *Todo) *Todo
-	Delete(model *Todo)
+	Fetch(urlQuery *TodoUrlQuery) (*TodoPaginate, error)
+	Find(id int) (*Todo, error)
+	Store(model *Todo) (*Todo, error)
+	Update(model *Todo) (*Todo, error)
+	Delete(model *Todo) error
 }
 
 type todoRepository struct {
@@ -17,24 +17,17 @@ type todoRepository struct {
 }
 
 func NewTodoRepository(orm pg.Util) TodoRepository {
-	if err := orm.CreateTable((*Todo)(nil), pg.UtilCreateTableOption{
-		IfNotExists: true,
-		Temp:        false,
-	}); err != nil {
-		panic(err)
-	}
-
 	return todoRepository{
 		orm: orm,
 	}
 }
 
-func (repo todoRepository) Fetch(urlQuery *TodoUrlQuery) *TodoPaginate {
+func (repo todoRepository) Fetch(urlQuery *TodoUrlQuery) (*TodoPaginate, error) {
 	todos := new([]Todo)
 	limit, page, total, err := repo.orm.Orm(todos).Paginate(urlQuery.Limit, urlQuery.Page)
 
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	return &TodoPaginate{
@@ -42,37 +35,39 @@ func (repo todoRepository) Fetch(urlQuery *TodoUrlQuery) *TodoPaginate {
 		Total: total,
 		Limit: limit,
 		Page:  page,
-	}
+	}, nil
 }
 
-func (repo todoRepository) Find(id int) *Todo {
+func (repo todoRepository) Find(id int) (*Todo, error) {
 	todo := new(Todo)
 
 	if err := repo.orm.Orm(todo).FindPk(id); err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return todo
+	return todo, nil
 }
 
-func (repo todoRepository) Store(model *Todo) *Todo {
+func (repo todoRepository) Store(model *Todo) (*Todo, error) {
 	if err := repo.orm.Orm(model).Insert(); err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return model
+	return model, nil
 }
 
-func (repo todoRepository) Update(model *Todo) *Todo {
+func (repo todoRepository) Update(model *Todo) (*Todo, error) {
 	if err := repo.orm.Orm(model).Update(); err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return model
+	return model, nil
 }
 
-func (repo todoRepository) Delete(model *Todo) {
+func (repo todoRepository) Delete(model *Todo) error {
 	if err := repo.orm.Orm(model).Delete(); err != nil {
-		panic(err)
+		return err
 	}
+
+	return nil
 }

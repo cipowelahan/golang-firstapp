@@ -3,11 +3,11 @@ package todo
 import "time"
 
 type TodoService interface {
-	Fetch(urlQuery *TodoUrlQuery) *TodoPaginate
-	Find(id int) *Todo
-	Store(body *TodoStore) *Todo
-	Update(id int, body *TodoStore) *Todo
-	Delete(id int)
+	Fetch(urlQuery *TodoUrlQuery) (*TodoPaginate, error)
+	Find(id int) (*Todo, error)
+	Store(body *TodoStore) (*Todo, error)
+	Update(id int, body *TodoStore) (*Todo, error)
+	Delete(id int) error
 }
 
 type todoService struct {
@@ -20,17 +20,15 @@ func NewTodoService(repo TodoRepository) TodoService {
 	}
 }
 
-func (serv todoService) Fetch(urlQuery *TodoUrlQuery) *TodoPaginate {
-	todos := serv.repo.Fetch(urlQuery)
-	return todos
+func (serv todoService) Fetch(urlQuery *TodoUrlQuery) (*TodoPaginate, error) {
+	return serv.repo.Fetch(urlQuery)
 }
 
-func (serv todoService) Find(id int) *Todo {
-	todo := serv.repo.Find(id)
-	return todo
+func (serv todoService) Find(id int) (*Todo, error) {
+	return serv.repo.Find(id)
 }
 
-func (serv todoService) Store(body *TodoStore) *Todo {
+func (serv todoService) Store(body *TodoStore) (*Todo, error) {
 	timeNow := time.Now()
 	data := &Todo{
 		TodoData: body.TodoData,
@@ -41,12 +39,16 @@ func (serv todoService) Store(body *TodoStore) *Todo {
 			UpdatedAt: &timeNow,
 		},
 	}
-	todo := serv.repo.Store(data)
-	return todo
+
+	return serv.repo.Store(data)
 }
 
-func (serv todoService) Update(id int, body *TodoStore) *Todo {
-	todoFind := serv.repo.Find(id)
+func (serv todoService) Update(id int, body *TodoStore) (*Todo, error) {
+	todoFind, err := serv.repo.Find(id)
+	if err != nil {
+		return nil, err
+	}
+
 	timeNow := time.Now()
 	todoFind.EditorID = body.AuthorID
 	todoFind.UpdatedAt = &timeNow
@@ -55,11 +57,15 @@ func (serv todoService) Update(id int, body *TodoStore) *Todo {
 		TodoData:   body.TodoData,
 		TodoAuthor: todoFind.TodoAuthor,
 	}
-	todo := serv.repo.Update(data)
-	return todo
+
+	return serv.repo.Update(data)
 }
 
-func (serv todoService) Delete(id int) {
-	todo := serv.repo.Find(id)
-	serv.repo.Delete(todo)
+func (serv todoService) Delete(id int) error {
+	todo, err := serv.repo.Find(id)
+	if err != nil {
+		return err
+	}
+
+	return serv.repo.Delete(todo)
 }

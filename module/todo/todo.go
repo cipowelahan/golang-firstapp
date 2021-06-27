@@ -18,15 +18,20 @@ type Router interface {
 }
 
 type router struct {
-	res  response.Util
-	serv TodoService
-	jwt  jwt.Util
+	response   response.Util
+	validation validation.Util
+	service    TodoService
+	jwt        jwt.Util
 }
 
 func Init(app app.Application) {
+	if err := app.Postgres.CreateTable((*Todo)(nil)); err != nil {
+		panic(err)
+	}
+
 	repo := NewTodoRepository(app.Postgres)
-	serv := NewTodoService(repo)
-	router := NewRouter(app.Response, serv, app.JWT)
+	service := NewTodoService(repo)
+	router := NewRouter(app.Response, app.Validation, service, app.JWT)
 
 	r := app.Router.Group("/todos", app.JWT.Middleware)
 	r.Get("/", router.Index)
@@ -37,93 +42,107 @@ func Init(app app.Application) {
 
 }
 
-func NewRouter(res response.Util, serv TodoService, jwt jwt.Util) Router {
+func NewRouter(response response.Util, validation validation.Util, service TodoService, jwt jwt.Util) Router {
 	return router{
-		res:  res,
-		serv: serv,
-		jwt:  jwt,
+		response:   response,
+		validation: validation,
+		service:    service,
+		jwt:        jwt,
 	}
 }
 
 func (r router) Index(c *fiber.Ctx) error {
 	urlQuery := new(TodoUrlQuery)
-
 	if err := c.QueryParser(urlQuery); err != nil {
-		panic(err)
+		return err
 	}
 
-	todos := r.serv.Fetch(urlQuery)
-	return r.res.Send(c, todos)
+	todos, err := r.service.Fetch(urlQuery)
+	if err != nil {
+		return err
+	}
+
+	return r.response.Send(c, todos)
 }
 
 func (r router) Get(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
-
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	todo := r.serv.Find(id)
-	return r.res.Send(c, todo)
+	todo, err := r.service.Find(id)
+	if err != nil {
+		return err
+	}
+
+	return r.response.Send(c, todo)
 }
 
 func (r router) Store(c *fiber.Ctx) error {
 	body := new(TodoStore)
-
 	if err := c.BodyParser(body); err != nil {
-		panic(err)
+		return err
 	}
 
-	if err := validation.Validate(*body); err != nil {
-		return r.res.ErrorValidation(c, err)
+	if err := r.validation.Validate(c, *body); err != nil {
+		return err
 	}
 
 	authorID, err := r.jwt.GetAuthorID(c)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	body.AuthorID = authorID
-	todo := r.serv.Store(body)
-	return r.res.Send(c, todo)
+	todo, err := r.service.Store(body)
+	if err != nil {
+		return err
+	}
+
+	return r.response.Send(c, todo)
 }
 
 func (r router) Update(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
-
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	body := new(TodoStore)
-
 	if err := c.BodyParser(body); err != nil {
-		panic(err)
+		return err
 	}
 
-	if err := validation.Validate(*body); err != nil {
-		return r.res.ErrorValidation(c, err)
+	if err := r.validation.Validate(c, *body); err != nil {
+		return err
 	}
 
 	authorID, err := r.jwt.GetAuthorID(c)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	body.AuthorID = authorID
-	todo := r.serv.Update(id, body)
-	return r.res.Send(c, todo)
+	todo, err := r.service.Update(id, body)
+	if err != nil {
+		return err
+	}
+
+	return r.response.Send(c, todo)
 }
 
 func (r router) Delete(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
-
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	r.serv.Delete(id)
-	return r.res.Send(c, nil, response.Config{
+	if err := r.service.Delete(id); err != nil {
+		return err
+	}
+
+	return r.response.Send(c, nil, response.Config{
 		Message: "Deleted",
 	})
 }

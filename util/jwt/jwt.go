@@ -93,25 +93,20 @@ func (u util) Decode(tokenString string) (map[string]interface{}, error) {
 }
 
 func (u util) Middleware(c *fiber.Ctx) error {
-	unauthorized := u.res.Error(c, nil, response.Config{
-		Code:    401,
-		Message: "Unauthorized",
-	})
-
 	authHeader := c.Get("Authorization")
 	if authHeader == "null" {
-		return unauthorized
+		return u.res.Unauthorized(c)
 	}
 
 	arrAuthHeader := strings.Split(authHeader, " ")
 	if len(arrAuthHeader) != 2 {
-		return unauthorized
+		return u.res.Unauthorized(c)
 	}
 
 	tokenString := arrAuthHeader[1]
 
 	if _, err := u.Decode(tokenString); err != nil {
-		return unauthorized
+		return u.res.Unauthorized(c)
 	}
 
 	return c.Next()

@@ -17,14 +17,19 @@ type Router interface {
 }
 
 type router struct {
-	res  response.Util
-	serv UserService
+	response   response.Util
+	validation validation.Util
+	service    UserService
 }
 
 func Init(app app.Application) {
+	if err := app.Postgres.CreateTable((*User)(nil)); err != nil {
+		panic(err)
+	}
+
 	repo := NewUserRepository(app.Postgres)
-	serv := NewUserService(repo)
-	router := NewRouter(app.Response, serv)
+	service := NewUserService(repo)
+	router := NewRouter(app.Response, app.Validation, service)
 
 	r := app.Router.Group("/users")
 	r.Get("/", router.Index)
@@ -34,80 +39,94 @@ func Init(app app.Application) {
 	r.Delete("/:id", router.Delete)
 }
 
-func NewRouter(res response.Util, serv UserService) Router {
+func NewRouter(response response.Util, validation validation.Util, service UserService) Router {
 	return router{
-		res:  res,
-		serv: serv,
+		response:   response,
+		validation: validation,
+		service:    service,
 	}
 }
 
 func (r router) Index(c *fiber.Ctx) error {
 	urlQuery := new(UserUrlQuery)
-
 	if err := c.QueryParser(urlQuery); err != nil {
-		panic(err)
+		return err
 	}
 
-	users := r.serv.Fetch(urlQuery)
-	return r.res.Send(c, users)
+	users, err := r.service.Fetch(urlQuery)
+	if err != nil {
+		return err
+	}
+
+	return r.response.Send(c, users)
 }
 
 func (r router) Get(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
-
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	user := r.serv.Find(id)
-	return r.res.Send(c, user)
+	user, err := r.service.Find(id)
+	if err != nil {
+		return err
+	}
+
+	return r.response.Send(c, user)
 }
 
 func (r router) Store(c *fiber.Ctx) error {
 	body := new(UserStore)
-
 	if err := c.BodyParser(body); err != nil {
-		panic(err)
+		return err
 	}
 
-	if err := validation.Validate(*body); err != nil {
-		return r.res.ErrorValidation(c, err)
+	if err := r.validation.Validate(c, *body); err != nil {
+		return err
 	}
 
-	user := r.serv.Store(body)
-	return r.res.Send(c, user)
+	user, err := r.service.Store(body)
+	if err != nil {
+		return err
+	}
+
+	return r.response.Send(c, user)
 }
 
 func (r router) Update(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
-
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	body := new(UserUpdate)
-
 	if err := c.BodyParser(body); err != nil {
-		panic(err)
+		return err
 	}
 
-	if err := validation.Validate(*body); err != nil {
-		return r.res.ErrorValidation(c, err)
+	if err := r.validation.Validate(c, *body); err != nil {
+		return err
 	}
 
-	user := r.serv.Update(id, body)
-	return r.res.Send(c, user)
+	user, err := r.service.Update(id, body)
+	if err != nil {
+		return err
+	}
+
+	return r.response.Send(c, user)
 }
 
 func (r router) Delete(c *fiber.Ctx) error {
 	id, err := c.ParamsInt("id")
-
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	r.serv.Delete(id)
-	return r.res.Send(c, nil, response.Config{
+	if err := r.service.Delete(id); err != nil {
+		return err
+	}
+
+	return r.response.Send(c, nil, response.Config{
 		Message: "Deleted",
 	})
 }
