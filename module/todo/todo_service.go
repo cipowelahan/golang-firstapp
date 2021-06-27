@@ -8,6 +8,11 @@ type TodoService interface {
 	Store(body *TodoStore) (*Todo, error)
 	Update(id int, body *TodoStore) (*Todo, error)
 	Delete(id int) error
+
+	FetchByAuthor(urlQuery *TodoUrlQuery, authorID *int64) (*TodoPaginate, error)
+	FindByAuthor(id int, authorID *int64) (*Todo, error)
+	UpdateByAuthor(id int, body *TodoStore, authorID *int64) (*Todo, error)
+	DeleteByAuthor(id int, authorID *int64) error
 }
 
 type todoService struct {
@@ -63,6 +68,41 @@ func (serv todoService) Update(id int, body *TodoStore) (*Todo, error) {
 
 func (serv todoService) Delete(id int) error {
 	todo, err := serv.repo.Find(id)
+	if err != nil {
+		return err
+	}
+
+	return serv.repo.Delete(todo)
+}
+
+func (serv todoService) FetchByAuthor(urlQuery *TodoUrlQuery, authorID *int64) (*TodoPaginate, error) {
+	return serv.repo.FetchByAuthor(urlQuery, authorID)
+}
+
+func (serv todoService) FindByAuthor(id int, authorID *int64) (*Todo, error) {
+	return serv.repo.FindByAuthor(id, authorID)
+}
+
+func (serv todoService) UpdateByAuthor(id int, body *TodoStore, authorID *int64) (*Todo, error) {
+	todoFind, err := serv.repo.FindByAuthor(id, authorID)
+	if err != nil {
+		return nil, err
+	}
+
+	timeNow := time.Now()
+	todoFind.EditorID = body.AuthorID
+	todoFind.UpdatedAt = &timeNow
+	data := &Todo{
+		Id:         todoFind.Id,
+		TodoData:   body.TodoData,
+		TodoAuthor: todoFind.TodoAuthor,
+	}
+
+	return serv.repo.Update(data)
+}
+
+func (serv todoService) DeleteByAuthor(id int, authorID *int64) error {
+	todo, err := serv.repo.FindByAuthor(id, authorID)
 	if err != nil {
 		return err
 	}

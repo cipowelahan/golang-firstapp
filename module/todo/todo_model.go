@@ -36,6 +36,7 @@ type TodoPaginate struct {
 }
 
 type TodoUrlQuery struct {
-	Limit int `query:"limit"`
-	Page  int `query:"page"`
+	Limit  int     `query:"limit"`
+	Page   int     `query:"page"`
+	Search *string `query:"search"`
 }

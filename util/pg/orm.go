@@ -1,7 +1,8 @@
 package pg
 
 import (
-	"github.com/go-pg/pg/v10"
+	"strings"
+
 	"github.com/go-pg/pg/v10/orm"
 )
 
@@ -11,7 +12,26 @@ type utilOrm struct {
 }
 
 func (uo utilOrm) Where(condition string, params ...interface{}) utilOrm {
+	if len(params) == 0 {
+		return uo
+	}
+
 	uo.orm = uo.orm.Where(condition, params...)
+	return uo
+}
+
+func (uo utilOrm) Search(search *string, colomns ...string) utilOrm {
+	if search == nil || len(colomns) == 0 {
+		return uo
+	}
+
+	for i := 0; i < len(colomns); i++ {
+		colomns[i] = colomns[i] + " ilike ?"
+	}
+
+	condition := strings.Join(colomns, " or ")
+	param := "%" + *search + "%"
+	uo.orm = uo.orm.Where(condition, param)
 	return uo
 }
 
@@ -24,6 +44,10 @@ func (uo utilOrm) SelectOne() error {
 }
 
 func (uo utilOrm) Find(condition string, params ...interface{}) error {
+	if len(params) == 0 {
+		return uo.orm.Select()
+	}
+
 	return uo.orm.Where(condition, params...).Select()
 }
 
@@ -40,13 +64,22 @@ func (uo utilOrm) Paginate(limit int, page int) (resultLimit int, resultPage int
 		page = 1
 	}
 
-	err = uo.orm.
+	errSelect := uo.orm.
 		Limit(limit).
 		Offset((page - 1) * limit).
 		Select()
 
+	if errSelect != nil {
+		err = errSelect
+		return
+	}
+
 	total := 0
-	_, _ = uo.orm.QueryOne(pg.Scan(&total), "SELECT count(*) FROM ?TableName")
+	total, errCount := uo.orm.Count()
+	if errCount != nil {
+		err = errCount
+		return
+	}
 
 	resultLimit = limit
 	resultPage = page

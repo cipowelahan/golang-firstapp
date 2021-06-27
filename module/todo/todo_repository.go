@@ -10,6 +10,9 @@ type TodoRepository interface {
 	Store(model *Todo) (*Todo, error)
 	Update(model *Todo) (*Todo, error)
 	Delete(model *Todo) error
+
+	FetchByAuthor(urlQuery *TodoUrlQuery, authorID *int64) (*TodoPaginate, error)
+	FindByAuthor(id int, authorID *int64) (*Todo, error)
 }
 
 type todoRepository struct {
@@ -24,7 +27,10 @@ func NewTodoRepository(orm pg.Util) TodoRepository {
 
 func (repo todoRepository) Fetch(urlQuery *TodoUrlQuery) (*TodoPaginate, error) {
 	todos := new([]Todo)
-	limit, page, total, err := repo.orm.Orm(todos).Paginate(urlQuery.Limit, urlQuery.Page)
+	limit, page, total, err := repo.orm.
+		Orm(todos).
+		Search(urlQuery.Search, "message").
+		Paginate(urlQuery.Limit, urlQuery.Page)
 
 	if err != nil {
 		return nil, err
@@ -70,4 +76,34 @@ func (repo todoRepository) Delete(model *Todo) error {
 	}
 
 	return nil
+}
+
+func (repo todoRepository) FetchByAuthor(urlQuery *TodoUrlQuery, authorID *int64) (*TodoPaginate, error) {
+	todos := new([]Todo)
+	limit, page, total, err := repo.orm.
+		Orm(todos).
+		Where("author_id=?", *authorID).
+		Search(urlQuery.Search, "message").
+		Paginate(urlQuery.Limit, urlQuery.Page)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &TodoPaginate{
+		Data:  todos,
+		Total: total,
+		Limit: limit,
+		Page:  page,
+	}, nil
+}
+
+func (repo todoRepository) FindByAuthor(id int, authorID *int64) (*Todo, error) {
+	todo := new(Todo)
+
+	if err := repo.orm.Orm(todo).Where("author_id=?", *authorID).FindPk(id); err != nil {
+		return nil, err
+	}
+
+	return todo, nil
 }

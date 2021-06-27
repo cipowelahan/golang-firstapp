@@ -57,7 +57,12 @@ func (r router) Index(c *fiber.Ctx) error {
 		return err
 	}
 
-	todos, err := r.service.Fetch(urlQuery)
+	authorID, err := r.jwt.GetAuthorID(c)
+	if err != nil {
+		return err
+	}
+
+	todos, err := r.service.FetchByAuthor(urlQuery, authorID)
 	if err != nil {
 		return err
 	}
@@ -71,7 +76,12 @@ func (r router) Get(c *fiber.Ctx) error {
 		return err
 	}
 
-	todo, err := r.service.Find(id)
+	authorID, err := r.jwt.GetAuthorID(c)
+	if err != nil {
+		return err
+	}
+
+	todo, err := r.service.FindByAuthor(id, authorID)
 	if err != nil {
 		return err
 	}
@@ -124,7 +134,7 @@ func (r router) Update(c *fiber.Ctx) error {
 	}
 
 	body.AuthorID = authorID
-	todo, err := r.service.Update(id, body)
+	todo, err := r.service.UpdateByAuthor(id, body, authorID)
 	if err != nil {
 		return err
 	}
@@ -138,7 +148,12 @@ func (r router) Delete(c *fiber.Ctx) error {
 		return err
 	}
 
-	if err := r.service.Delete(id); err != nil {
+	authorID, err := r.jwt.GetAuthorID(c)
+	if err != nil {
+		return err
+	}
+
+	if err := r.service.DeleteByAuthor(id, authorID); err != nil {
 		return err
 	}
 
