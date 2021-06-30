@@ -53,7 +53,7 @@ func (serv authService) Login(credential *AuthLogin) (*AuthToken, error) {
 	user, err := serv.userRepo.FindLogin("email=?", credential.Email)
 
 	if err != nil || !bcrypt.CheckPasswordHash(credential.Password, *user.Password) {
-		return nil, errors.New("Invalid Credential")
+		return nil, errors.New("invalid credential")
 	}
 
 	token, err := serv.jwt.Encode(jwt.Payload{

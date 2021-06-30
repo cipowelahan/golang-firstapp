@@ -8,7 +8,8 @@ import (
 )
 
 type Util interface {
-	Validate(c *fiber.Ctx, body interface{}) error
+	Validate(c *fiber.Ctx, body interface{}) ([]*ErrorResponse, error)
+	ValidateAndBodyParser(c *fiber.Ctx, body interface{}) ([]*ErrorResponse, error)
 }
 
 type ErrorResponse struct {
@@ -44,15 +45,26 @@ func (u util) process(s interface{}) []*ErrorResponse {
 	return errors
 }
 
-func (u util) Validate(c *fiber.Ctx, body interface{}) error {
+func (u util) Validate(c *fiber.Ctx, body interface{}) ([]*ErrorResponse, error) {
 	if processValidation := u.process(body); processValidation != nil {
 		resConfig := response.Config{
 			Code:    422,
-			Message: "Validation Failure",
+			Message: "validation failure",
 		}
 
-		return u.response.Send(c, processValidation, resConfig)
+		return processValidation, u.response.Send(c, processValidation, resConfig)
 	}
 
-	return nil
+	return nil, nil
+}
+
+func (u util) ValidateAndBodyParser(c *fiber.Ctx, body interface{}) ([]*ErrorResponse, error) {
+	var listErr []*ErrorResponse
+
+	if err := c.BodyParser(body); err != nil {
+		listErr = append(listErr, &ErrorResponse{})
+		return listErr, err
+	}
+
+	return u.Validate(c, body)
 }

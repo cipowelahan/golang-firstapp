@@ -47,11 +47,7 @@ func NewRouter(response response.Util, validation validation.Util, service AuthS
 
 func (r router) Register(c *fiber.Ctx) error {
 	body := new(AuthRegister)
-	if err := c.BodyParser(body); err != nil {
-		return err
-	}
-
-	if err := r.validation.Validate(c, *body); err != nil {
+	if arrErr, err := r.validation.ValidateAndBodyParser(c, body); arrErr != nil {
 		return err
 	}
 
@@ -65,11 +61,7 @@ func (r router) Register(c *fiber.Ctx) error {
 
 func (r router) Login(c *fiber.Ctx) error {
 	body := new(AuthLogin)
-	if err := c.BodyParser(body); err != nil {
-		return err
-	}
-
-	if err := r.validation.Validate(c, *body); err != nil {
+	if arrErr, err := r.validation.ValidateAndBodyParser(c, body); arrErr != nil {
 		return err
 	}
 

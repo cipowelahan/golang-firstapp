@@ -35,7 +35,7 @@ func Init() Util {
 
 func (u util) getConfig(configs ...Config) Config {
 	config := Config{
-		Message: "OK",
+		Message: "ok",
 		Code:    200,
 	}
 
@@ -70,7 +70,7 @@ func (u util) Error(c *fiber.Ctx, err error) error {
 
 	if err == pg.ErrNoRows {
 		config.Code = 404
-		config.Message = "Row Not Found"
+		config.Message = "row not found"
 	}
 
 	return u.Send(c, nil, config)
@@ -79,7 +79,7 @@ func (u util) Error(c *fiber.Ctx, err error) error {
 func (u util) Unauthorized(c *fiber.Ctx) error {
 	config := Config{
 		Code:    401,
-		Message: "Unauthorized",
+		Message: "unauthorized",
 	}
 
 	return u.Send(c, nil, config)
@@ -88,7 +88,7 @@ func (u util) Unauthorized(c *fiber.Ctx) error {
 func (u util) RouteNotFound(c *fiber.Ctx) error {
 	config := Config{
 		Code:    401,
-		Message: "Route Not Found",
+		Message: "route not found",
 	}
 
 	return u.Send(c, nil, config)

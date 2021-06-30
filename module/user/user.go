@@ -77,11 +77,7 @@ func (r router) Get(c *fiber.Ctx) error {
 
 func (r router) Store(c *fiber.Ctx) error {
 	body := new(UserStore)
-	if err := c.BodyParser(body); err != nil {
-		return err
-	}
-
-	if err := r.validation.Validate(c, *body); err != nil {
+	if arrErr, err := r.validation.ValidateAndBodyParser(c, body); arrErr != nil {
 		return err
 	}
 
@@ -100,11 +96,7 @@ func (r router) Update(c *fiber.Ctx) error {
 	}
 
 	body := new(UserUpdate)
-	if err := c.BodyParser(body); err != nil {
-		return err
-	}
-
-	if err := r.validation.Validate(c, *body); err != nil {
+	if arrErr, err := r.validation.ValidateAndBodyParser(c, body); arrErr != nil {
 		return err
 	}
 
